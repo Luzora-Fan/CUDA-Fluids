@@ -6,8 +6,7 @@
  * @brief Realtime GLFW/OpenGL front end for the CUDA 3D fluid simulation.
  *
  * The window shows a max-intensity projection of the 3D density and temperature
- * volumes along the z axis. Mouse drags inject dye, heat, and velocity at the
- * mid-z slice.
+ * volumes along the z axis. Right-click drag orbits the camera.
  */
 
 #include <GLFW/glfw3.h>
@@ -37,11 +36,31 @@ struct AppOptions {
     int mgVCycles = 2;
 };
 
-struct MouseState {
-    bool hasPrevious = false;
-    double previousX = 0.0;
-    double previousY = 0.0;
+struct CameraState {
+    float yaw = 0.0f;
+    float pitch = 0.0f;
+    bool rotating = false;
+    double prevX = 0.0;
+    double prevY = 0.0;
 };
+
+void updateCameraOrbit(GLFWwindow* window, CameraState& cam) {
+    const bool down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    if (!down) { cam.rotating = false; return; }
+
+    double cx = 0.0, cy = 0.0;
+    glfwGetCursorPos(window, &cx, &cy);
+    if (cam.rotating) {
+        constexpr float kSens = 0.005f;
+        cam.yaw += static_cast<float>(cx - cam.prevX) * kSens;
+        cam.pitch += static_cast<float>(cy - cam.prevY) * kSens;
+        constexpr float kPitchLimit = 1.55334f;  // ~pi/2 - 0.017
+        cam.pitch = std::clamp(cam.pitch, -kPitchLimit, kPitchLimit);
+    }
+    cam.prevX = cx;
+    cam.prevY = cy;
+    cam.rotating = true;
+}
 
 int parseInt(const char* text, const std::string& name) {
     try {
@@ -131,34 +150,6 @@ void renderTexture(GLuint texture, int fbW, int fbH) {
     glEnd();
 }
 
-void addMouseImpulse(GLFWwindow* window, Fluid3D& fluid, MouseState& mouse) {
-    const bool down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-    if (!down) { mouse.hasPrevious = false; return; }
-
-    int ww = 0, wh = 0;
-    glfwGetWindowSize(window, &ww, &wh);
-    if (ww <= 0 || wh <= 0) return;
-
-    double cx = 0.0, cy = 0.0;
-    glfwGetCursorPos(window, &cx, &cy);
-    const float nx = std::clamp(static_cast<float>(cx / (double)ww), 0.0f, 1.0f);
-    const float ny = std::clamp(1.0f - static_cast<float>(cy / (double)wh), 0.0f, 1.0f);
-    const float nz = 0.5f;
-
-    float3 vel = make_float3(0, 0, 0);
-    if (mouse.hasPrevious) {
-        const auto& s = fluid.settings();
-        const float dx = static_cast<float>((cx - mouse.previousX) / (double)ww);
-        const float dy = static_cast<float>((mouse.previousY - cy) / (double)wh);
-        vel = make_float3(dx * (float)s.width * 24.0f, dy * (float)s.height * 24.0f, 0.0f);
-    }
-
-    fluid.addImpulse(nx, ny, nz, 0.06f, 3.5f, 2.25f, vel);
-    mouse.previousX = cx;
-    mouse.previousY = cy;
-    mouse.hasPrevious = true;
-}
-
 void addDemoImpulse(Fluid3D& fluid, double time) {
     const float sx = 0.5f + 0.18f * std::sin(static_cast<float>(time) * 1.6f);
     const float sy = 0.25f;
@@ -220,10 +211,12 @@ int main(int argc, char** argv) {
         glfwSwapInterval(1);
 
         Fluid3D fluid(settings);
-        volr::Renderer renderer(settings.width, settings.height);
-        MouseState mouse;
-        GLuint fluidTexture = createFluidTexture(settings.width, settings.height);
-        std::vector<unsigned char> pixels((size_t)settings.width * settings.height * 4, 0);
+        const int renderW = settings.width;
+        const int renderH = settings.height;
+        volr::Renderer renderer(renderW, renderH);
+        CameraState camera;
+        GLuint fluidTexture = createFluidTexture(renderW, renderH);
+        std::vector<unsigned char> pixels((size_t)renderW * renderH * 4, 0);
 
         bool resetWasPressed = false;
         double lastTime = glfwGetTime();
@@ -246,9 +239,10 @@ int main(int argc, char** argv) {
             if (resetIsPressed && !resetWasPressed) fluid.reset();
             resetWasPressed = resetIsPressed;
 
+            updateCameraOrbit(window, camera);
+
             while (accumulator >= settings.dt) {
                 addDemoImpulse(fluid, now);
-                addMouseImpulse(window, fluid, mouse);
                 fluid.step();
                 accumulator -= settings.dt;
             }
@@ -259,11 +253,11 @@ int main(int argc, char** argv) {
                 renderer.render(
                     fluid.densityDevice(), fluid.temperatureDevice(),
                     settings.width, settings.height, settings.depth,
-                    0.36f, 0.42f);
+                    0.36f, 0.42f, camera.yaw, camera.pitch);
                 renderer.copyToHost(pixels.data());
                 glBindTexture(GL_TEXTURE_2D, fluidTexture);
                 glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-                    settings.width, settings.height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+                    renderW, renderH, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
                 renderTexture(fluidTexture, fbW, fbH);
                 glfwSwapBuffers(window);
                 ++titleFrameCount;

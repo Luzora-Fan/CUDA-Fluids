@@ -25,9 +25,15 @@ public:
     Renderer(const Renderer&) = delete;
     Renderer& operator=(const Renderer&) = delete;
 
-    /** Renders MIP along z; output is width*height RGBA8 on device. */
+    /**
+     * Renders an MIP of the volume to the internal width*height RGBA8 image.
+     * The output image resolution (set at construction) is independent of the
+     * grid resolution (w,h,d): pick a higher image resolution to supersample
+     * the volume and reduce blockiness on screen.
+     */
     void render(const float* density, const float* temperature, int w, int h, int d,
-                float densityExposure, float temperatureExposure);
+                float densityExposure, float temperatureExposure,
+                float yaw = 0.0f, float pitch = 0.0f);
 
     /** Copies the rendered RGBA8 image into a host buffer (size width*height*4). */
     void copyToHost(unsigned char* dst) const;

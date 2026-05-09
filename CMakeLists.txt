@@ -40,18 +40,18 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glfw)
 
 # The executable owns both the CUDA solver and the realtime window loop.
-add_executable(cuda_fluids
+add_executable(cuda-fluids
     src/Fluid3D.cu
     src/Multigrid.cu
     src/VolumeRender.cu
     src/main.cpp
 )
 
-target_include_directories(cuda_fluids PRIVATE include)
-target_link_libraries(cuda_fluids PRIVATE CUDA::cudart OpenGL::GL glfw)
+target_include_directories(cuda-fluids PRIVATE include)
+target_link_libraries(cuda-fluids PRIVATE CUDA::cudart OpenGL::GL glfw)
 
 # Separate device linking keeps the CUDA translation unit ready for future
 # expansion into multiple CUDA source files.
-set_target_properties(cuda_fluids PROPERTIES
+set_target_properties(cuda-fluids PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )

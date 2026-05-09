@@ -41,7 +41,7 @@ From normal PowerShell:
 To specify a CUDA architecture explicitly:
 
 ```powershell
-.\scripts\build-msvc.ps1 -BuildDir build -CudaArchitectures 86
+.\scripts\build-msvc.ps1 -BuildDir build -CudaArchitectures 120
 ```
 
 Manual build from an x64 Visual Studio developer shell:
@@ -54,7 +54,7 @@ cmake --build build
 ### Run
 
 ```powershell
-.\build\cuda_fluids.exe --width 64 --height 64 --depth 64 --window-scale 8
+.\build\cuda-fluids.exe
 ```
 
 Grid dimensions must each be divisible by `2^(mg-levels - 1)` so the multigrid hierarchy can halve cleanly. With the default of 4 levels that is a multiple of 8.
@@ -62,16 +62,16 @@ Grid dimensions must each be divisible by `2^(mg-levels - 1)` so the multigrid h
 Tuning examples:
 
 ```powershell
-.\build\cuda_fluids.exe --vorticity-strength 24
-.\build\cuda_fluids.exe --buoyancy-strength 48
-.\build\cuda_fluids.exe --viscosity 1e-2
-.\build\cuda_fluids.exe --mg-levels 5 --mg-vcycles 1
+.\build\cuda-fluids.exe --vorticity-strength 24
+.\build\cuda-fluids.exe --buoyancy-strength 48
+.\build\cuda-fluids.exe --viscosity 1e-2
+.\build\cuda-fluids.exe --mg-levels 5 --mg-vcycles 1
 ```
 
 Quick smoke test:
 
 ```powershell
-.\build\cuda_fluids.exe --width 32 --height 32 --depth 32 --max-frames 10
+.\build\cuda-fluids.exe --width 32 --height 32 --depth 32 --max-frames 10
 ```
 
 Controls:

@@ -13,7 +13,7 @@ provided. Defaults to "build".
 
 .PARAMETER CudaArchitectures
 Optional CUDA architecture value passed to CMAKE_CUDA_ARCHITECTURES, such as
-"75", "86", or "89".
+"75", "86", "89", "100", or "120".
 
 .PARAMETER Clean
 Deletes the selected build directory before configuring. Use this when CMake was
@@ -26,7 +26,7 @@ Runs CMake configure/generate but skips the build step.
 .\scripts\build-msvc.ps1 -BuildDir build-live-clean -Clean
 
 .EXAMPLE
-.\scripts\build-msvc.ps1 -BuildDir build -CudaArchitectures 86
+.\scripts\build-msvc.ps1 -BuildDir build -CudaArchitectures 120
 #>
 
 param(
