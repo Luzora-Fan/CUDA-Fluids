@@ -1,6 +1,19 @@
+# CUDA compiler intermediate files.
 *.i
 *.ii
 *.gpu
 *.ptx
 *.cubin
 *.fatbin
+
+# Local build and generated output directories.
+build/
+build*/
+out/
+output/
+output*/
+
+# IDE-local project metadata.
+.vs/
+.idea/
+CMakeUserPresets.json
